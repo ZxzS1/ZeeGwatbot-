@@ -1,9 +1,7 @@
 import http.server
 import socketserver
 import json
-import threading
 import urllib.request
-import time
 import os
 
 BOT_TOKEN = "8930956292:AAGGF0mGfjFUUpOyOhBoIftyYeuYNLJzx90"
@@ -53,13 +51,10 @@ def send_telegram_request(method, payload):
     req = urllib.request.Request(
         url, 
         data=data, 
-        headers={
-            'Content-Type': 'application/json',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
-        }
+        headers={'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0'}
     )
     try:
-        with urllib.request.urlopen(req, timeout=35) as response:
+        with urllib.request.urlopen(req, timeout=15) as response:
             return json.loads(response.read().decode('utf-8'))
     except Exception as e:
         print(f"Error calling {method}: {e}")
@@ -69,8 +64,6 @@ def process_update(update):
     if "message" in update:
         msg = update["message"]
         chat_id = msg["chat"]["id"]
-        text = msg.get("text", "").strip()
-
         welcome_text = "👋 **MyanPlay 24/7 Game Top-Up Bot မှ ကြိုဆိုပါသည်!**\n\n၂၄ နာရီ ပိတ်ရက်မရှိ ဂိမ်းစိန်/UC နှင့် Gift Card များကို အလိုအလျောက် ဝယ်ယူနိုင်ပါသည်။\n\nအောက်ပါ Menu များမှ စတင် ရွေးချယ်နိုင်ပါသည်ခင်ဗျာ -"
         send_telegram_request("sendMessage", {
             "chat_id": chat_id,
@@ -105,10 +98,11 @@ def process_update(update):
                 "reply_markup": DIRECT_GAMES_MENU
             })
         elif data == "menu_voucher":
+            send_telegram_text = "🎁 **24/7 Instant Voucher & Gift Cards**\n\nဝယ်ယူလိုသည့် Gift Card / Digital Code အမျိုးအစားကို ရွေးချယ်ပါ -"
             send_telegram_request("editMessageText", {
                 "chat_id": chat_id,
                 "message_id": msg_id,
-                "text": "🎁 **24/7 Instant Voucher & Gift Cards**\n\nဝယ်ယူလိုသည့် Gift Card / Digital Code အမျိုးအစားကို ရွေးချယ်ပါ -",
+                "text": send_telegram_text,
                 "parse_mode": "Markdown",
                 "reply_markup": VOUCHER_GAMES_MENU
             })
@@ -121,40 +115,33 @@ def process_update(update):
                 "reply_markup": {"inline_keyboard": [[{"text": "⬅️ ပင်မစာမျက်နှာသို့", "callback_data": "menu_main"}]]}
             })
 
-def start_bot_polling():
-    print("🧹 Clearing any existing Telegram Webhooks...")
-    send_telegram_request("deleteWebhook", {"drop_pending_updates": True})
-    
-    offset = 0
-    print("🤖 MyanPlay Telegram Bot Agent Polling Started...")
-    while True:
-        try:
-            res = send_telegram_request("getUpdates", {"offset": offset, "timeout": 20})
-            if res and res.get("ok"):
-                for update in res.get("result", []):
-                    offset = update["update_id"] + 1
-                    process_update(update)
-            else:
-                print(f"getUpdates response error: {res}")
-        except Exception as e:
-            print(f"Polling error: {e}")
-        time.sleep(1)
-
-class DummyHTTPHandler(http.server.BaseHTTPRequestHandler):
+class WebhookHandler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
         self.send_header('Content-type', 'text/plain')
         self.end_headers()
-        self.wfile.write(b"MyanPlay Telegram Bot is Live 24/7")
+        self.wfile.write(b"ZeeGwatbot Webhook Service is Live!")
 
-def run_dummy_http_server():
-    port = int(os.environ.get("PORT", 8080))
-    server = socketserver.TCPServer(("", port), DummyHTTPHandler)
-    print(f"HTTP Server listening on port {port}")
-    server.serve_forever()
+    def do_POST(self):
+        content_length = int(self.headers.get('Content-Length', 0))
+        post_data = self.rfile.read(content_length)
+        try:
+            update = json.loads(post_data.decode('utf-8'))
+            process_update(update)
+        except Exception as e:
+            print(f"Error processing webhook: {e}")
+        self.send_response(200)
+        self.end_headers()
+
+def set_webhook_on_render():
+    render_url = os.environ.get("RENDER_EXTERNAL_URL", "https://zeegwatbot.onrender.com")
+    webhook_url = f"{render_url}/webhook"
+    print(f"Setting Telegram Webhook to: {webhook_url}")
+    send_telegram_request("setWebhook", {"url": webhook_url})
 
 if __name__ == "__main__":
-    t = threading.Thread(target=run_dummy_http_server, daemon=True)
-    t.start()
-    start_bot_polling()
-                
+    set_webhook_on_render()
+    port = int(os.environ.get("PORT", 8080))
+    print(f"Starting Webhook HTTP Server on port {port}...")
+    server = socketserver.TCPServer(("", port), WebhookHandler)
+    server.serve_forever()
