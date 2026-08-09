@@ -64,7 +64,63 @@ def process_update(update):
             welcome_text = "👋 **MyanPlay 24/7 Game Top-Up Bot မှ ကြိုဆိုပါသည်!**\n\n၂၄ နာရီ ပိတ်ရက်မရှိ ဂိမ်းစိန်/UC နှင့် Gift Card များကို အလိုအလျောက် ဝယ်ယူနိုင်ပါသည်။\n\nအောက်ပါ Menu များမှ စတင် ရွေးချယ်နိုင်ပါသည်ခင်ဗျာ -"
             send_telegram_request("sendMessage", {
                 "chat_id": chat_id,
-                "text
+                "text": welcome_text,
+                "parse_mode": "Markdown",
+                "reply_markup": MAIN_MENU
+            })
 
-              
-  
+    elif "callback_query" in update:
+        cq = update["callback_query"]
+        cq_id = cq["id"]
+        chat_id = cq["message"]["chat"]["id"]
+        msg_id = cq["message"]["message_id"]
+        data = cq["data"]
+
+        send_telegram_request("answerCallbackQuery", {"callback_query_id": cq_id})
+
+        if data == "menu_main":
+            send_telegram_request("editMessageText", {
+                "chat_id": chat_id,
+                "message_id": msg_id,
+                "text": "👋 **MyanPlay 24/7 Game Top-Up Bot - ပင်မစာမျက်နှာ**\n\nဝယ်ယူလိုသည့် ဝန်ဆောင်မှုကို ရွေးချယ်ပါ -",
+                "parse_mode": "Markdown",
+                "reply_markup": MAIN_MENU
+            })
+        elif data == "menu_direct":
+            send_telegram_request("editMessageText", {
+                "chat_id": chat_id,
+                "message_id": msg_id,
+                "text": "🎮 **Direct Player ID Top-Up**\n\nဂိမ်းအကောင့်ထဲသို့ တိုက်ရိုက် ဖြည့်သွင်းလိုသည့် ဂိမ်းကို ရွေးချယ်ပါ -",
+                "parse_mode": "Markdown",
+                "reply_markup": DIRECT_GAMES_MENU
+            })
+        elif data == "menu_voucher":
+            send_telegram_request("editMessageText", {
+                "chat_id": chat_id,
+                "message_id": msg_id,
+                "text": "🎁 **24/7 Instant Voucher & Gift Cards**\n\nဝယ်ယူလိုသည့် Gift Card / Digital Code အမျိုးအစားကို ရွေးချယ်ပါ -",
+                "parse_mode": "Markdown",
+                "reply_markup": VOUCHER_GAMES_MENU
+            })
+        elif data == "menu_payment":
+            send_telegram_request("editMessageText", {
+                "chat_id": chat_id,
+                "message_id": msg_id,
+                "text": PAYMENT_INFO,
+                "parse_mode": "Markdown",
+                "reply_markup": {"inline_keyboard": [[{"text": "⬅️ ပင်မစာမျက်နှာသို့", "callback_data": "menu_main"}]]}
+            })
+
+def start_bot_polling():
+    offset = 0
+    print("🤖 MyanPlay Telegram Bot Agent Running...")
+    while True:
+        res = send_telegram_request("getUpdates", {"offset": offset, "timeout": 30})
+        if res and res.get("ok"):
+            for update in res.get("result", []):
+                offset = update["update_id"] + 1
+                process_update(update)
+        time.sleep(1)
+
+if __name__ == "__main__":
+    start_bot_polling()
