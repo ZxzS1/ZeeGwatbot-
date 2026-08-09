@@ -50,9 +50,16 @@ VOUCHER_GAMES_MENU = {
 def send_telegram_request(method, payload):
     url = API_URL + method
     data = json.dumps(payload).encode('utf-8')
-    req = urllib.request.Request(url, data=data, headers={'Content-Type': 'application/json'})
+    req = urllib.request.Request(
+        url, 
+        data=data, 
+        headers={
+            'Content-Type': 'application/json',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+        }
+    )
     try:
-        with urllib.request.urlopen(req) as response:
+        with urllib.request.urlopen(req, timeout=35) as response:
             return json.loads(response.read().decode('utf-8'))
     except Exception as e:
         print(f"Error calling {method}: {e}")
@@ -62,16 +69,15 @@ def process_update(update):
     if "message" in update:
         msg = update["message"]
         chat_id = msg["chat"]["id"]
-        text = msg.get("text", "")
+        text = msg.get("text", "").strip()
 
-        if text == "/start":
-            welcome_text = "👋 **MyanPlay 24/7 Game Top-Up Bot မှ ကြိုဆိုပါသည်!**\n\n၂၄ နာရီ ပိတ်ရက်မရှိ ဂိမ်းစိန်/UC နှင့် Gift Card များကို အလိုအလျောက် ဝယ်ယူနိုင်ပါသည်။\n\nအောက်ပါ Menu များမှ စတင် ရွေးချယ်နိုင်ပါသည်ခင်ဗျာ -"
-            send_telegram_request("sendMessage", {
-                "chat_id": chat_id,
-                "text": welcome_text,
-                "parse_mode": "Markdown",
-                "reply_markup": MAIN_MENU
-            })
+        welcome_text = "👋 **MyanPlay 24/7 Game Top-Up Bot မှ ကြိုဆိုပါသည်!**\n\n၂၄ နာရီ ပိတ်ရက်မရှိ ဂိမ်းစိန်/UC နှင့် Gift Card များကို အလိုအလျောက် ဝယ်ယူနိုင်ပါသည်။\n\nအောက်ပါ Menu များမှ စတင် ရွေးချယ်နိုင်ပါသည်ခင်ဗျာ -"
+        send_telegram_request("sendMessage", {
+            "chat_id": chat_id,
+            "text": welcome_text,
+            "parse_mode": "Markdown",
+            "reply_markup": MAIN_MENU
+        })
 
     elif "callback_query" in update:
         cq = update["callback_query"]
@@ -116,34 +122,39 @@ def process_update(update):
             })
 
 def start_bot_polling():
+    print("🧹 Clearing any existing Telegram Webhooks...")
+    send_telegram_request("deleteWebhook", {"drop_pending_updates": True})
+    
     offset = 0
-    print("🤖 MyanPlay Telegram Bot Agent Running...")
+    print("🤖 MyanPlay Telegram Bot Agent Polling Started...")
     while True:
         try:
-            res = send_telegram_request("getUpdates", {"offset": offset, "timeout": 30})
+            res = send_telegram_request("getUpdates", {"offset": offset, "timeout": 20})
             if res and res.get("ok"):
                 for update in res.get("result", []):
                     offset = update["update_id"] + 1
                     process_update(update)
+            else:
+                print(f"getUpdates response error: {res}")
         except Exception as e:
             print(f"Polling error: {e}")
         time.sleep(1)
 
+class DummyHTTPHandler(http.server.BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/plain')
+        self.end_headers()
+        self.wfile.write(b"MyanPlay Telegram Bot is Live 24/7")
+
 def run_dummy_http_server():
     port = int(os.environ.get("PORT", 8080))
-    class SimpleHandler(http.server.SimpleHTTPRequestHandler):
-        def do_GET(self):
-            self.send_response(200)
-            self.send_header('Content-type', 'text/plain')
-            self.end_headers()
-            self.wfile.write(b"MyanPlay Telegram Bot is Live 24/7")
-
-    with socketserver.TCPServer(("", port), SimpleHandler) as httpd:
-        print(f"HTTP Server listening on port {port}")
-        httpd.serve_forever()
+    server = socketserver.TCPServer(("", port), DummyHTTPHandler)
+    print(f"HTTP Server listening on port {port}")
+    server.serve_forever()
 
 if __name__ == "__main__":
     t = threading.Thread(target=run_dummy_http_server, daemon=True)
     t.start()
     start_bot_polling()
-            
+                
