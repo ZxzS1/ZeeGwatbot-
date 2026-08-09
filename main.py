@@ -1,6 +1,10 @@
-import urllib.request
+import http.server
+import socketserver
 import json
+import threading
+import urllib.request
 import time
+import os
 
 BOT_TOKEN = "8930956292:AAGGF0mGfjFUUpOyOhBoIftyYeuYNLJzx90"
 API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}/"
@@ -115,12 +119,31 @@ def start_bot_polling():
     offset = 0
     print("🤖 MyanPlay Telegram Bot Agent Running...")
     while True:
-        res = send_telegram_request("getUpdates", {"offset": offset, "timeout": 30})
-        if res and res.get("ok"):
-            for update in res.get("result", []):
-                offset = update["update_id"] + 1
-                process_update(update)
+        try:
+            res = send_telegram_request("getUpdates", {"offset": offset, "timeout": 30})
+            if res and res.get("ok"):
+                for update in res.get("result", []):
+                    offset = update["update_id"] + 1
+                    process_update(update)
+        except Exception as e:
+            print(f"Polling error: {e}")
         time.sleep(1)
 
+def run_dummy_http_server():
+    port = int(os.environ.get("PORT", 8080))
+    class SimpleHandler(http.server.SimpleHTTPRequestHandler):
+        def do_GET(self):
+            self.send_response(200)
+            self.send_header('Content-type', 'text/plain')
+            self.end_headers()
+            self.wfile.write(b"MyanPlay Telegram Bot is Live 24/7")
+
+    with socketserver.TCPServer(("", port), SimpleHandler) as httpd:
+        print(f"HTTP Server listening on port {port}")
+        httpd.serve_forever()
+
 if __name__ == "__main__":
+    t = threading.Thread(target=run_dummy_http_server, daemon=True)
+    t.start()
     start_bot_polling()
+            
