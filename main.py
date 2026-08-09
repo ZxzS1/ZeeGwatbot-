@@ -4,7 +4,7 @@ import json
 import urllib.request
 import os
 
-BOT_TOKEN = "8930956292:AAGGF0mGfjFUUpOyOhBoIftyYeuYNLJzx90"
+BOT_TOKEN = "8930956292:AAHFWpit3gyqs8cCpvPAnyueb14hJwFwyAE"
 API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}/"
 
 PAYMENT_INFO = """
@@ -145,3 +145,4 @@ if __name__ == "__main__":
     print(f"Starting Webhook HTTP Server on port {port}...")
     server = socketserver.TCPServer(("", port), WebhookHandler)
     server.serve_forever()
+                                  
