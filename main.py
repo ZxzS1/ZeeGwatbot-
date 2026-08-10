@@ -2,15 +2,13 @@ import http.server
 import socketserver
 import json
 import urllib.request
-import re
 import os
-import time
 
 BOT_TOKEN = "8930956292:AAHFWpit3gyqs8cCpvPAnyueb14hJwFwyAE"
 API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}/"
 
-PAYMENT_PHONE = "09449490500"
-PAYMENT_NAME = "Soe Pyae Sone"
+# Admin Telegram Username
+ADMIN_USERNAME = "@ZeeGwat0"
 
 PAYMENT_INFO = """
 💳 **ငွေပေးချေမှု အကောင့်များ (09449490500 - Soe Pyae Sone)**
@@ -21,23 +19,23 @@ PAYMENT_INFO = """
 • UAB Pay: 09449490500 (Soe Pyae Sone)
 • Yoma Pay: 09449490500 (Soe Pyae Sone)
 
-ငွေလွှဲပြီးပါက ရရှိလာသော **ငွေလွှဲပြေစာ (Screenshot)** ကို ဤ Chat ထဲတွင် တိုက်ရိုက် ပို့ပေးပါခင်ဗျာ။
+ငွေလွှဲပြီးပါက ရရှိလာသော **ငွေလွှဲပြေစာ (Screenshot)** နှင့် **Player ID** ကို ဤ Chat ထဲတွင် တိုက်ရိုက် ပို့ပေးပါခင်ဗျာ။
 """
 
-SUPPORT_INFO = """
+SUPPORT_INFO = f"""
 📞 **Admin Contact & Support**
 ------------------------------------
 • Phone: 09449490500 (Soe Pyae Sone)
-• Telegram Admin: @ZeeGwat0
+• Telegram Admin: {ADMIN_USERNAME}
 • Website: https://myanplay.vercel.app
 
-အော်ဒါများနှင့် ပတ်သက်၍ အကူအညီ လိုအပ်ပါက သို့မဟုတ် မေးမြန်းလိုပါက Admin ထံ တိုက်ရိုက် ဆက်သွယ်နိုင်ပါသည်ခင်ဗျာ။
+အော်ဒါများနှင့် ပတ်သက်၍ အကူအညီ လိုအပ်ပါက သို့မဟုတ် မေးမြန်းလိုပါက Admin ({ADMIN_USERNAME}) ထံ တိုက်ရိုက် ဆက်သွယ်နိုင်ပါသည်ခင်ဗျာ။
 """
 
 MAIN_MENU = {
     "inline_keyboard": [
-        [{"text": "🛡️ Mobile Legends (Diamonds)", "callback_data": "game_mlbb"}],
-        [{"text": "🎯 PUBG Mobile (UC)", "callback_data": "game_pubg"}],
+        [{"text": "⚔️ Mobile Legends: Bang Bang", "callback_data": "game_mlbb"}],
+        [{"text": "🪖 PUBG Mobile (UC)", "callback_data": "game_pubg"}],
         [{"text": "💳 ငွေပေးချေမှု အကောင့်များ", "callback_data": "menu_payment"}],
         [{"text": "📞 Admin Contact / Support", "callback_data": "menu_support"}]
     ]
@@ -45,28 +43,31 @@ MAIN_MENU = {
 
 MLBB_PKGS = {
     "inline_keyboard": [
-        [{"text": "💎 Weekly Diamond Pass (6,600 Ks)", "callback_data": "pkg_weekly_pass_6600"}],
-        [{"text": "💎 86 Diamonds (5,600 Ks)", "callback_data": "pkg_86_diamonds_5600"}],
-        [{"text": "💎 172 Diamonds (10,800 Ks)", "callback_data": "pkg_172_diamonds_10800"}],
-        [{"text": "💎 202 Diamonds (12,000 Ks)", "callback_data": "pkg_202_diamonds_12000"}],
-        [{"text": "💎 257 Diamonds (16,800 Ks)", "callback_data": "pkg_257_diamonds_16800"}],
-        [{"text": "💎 404 Diamonds (21,000 Ks)", "callback_data": "pkg_404_diamonds_21000"}],
-        [{"text": "💎 706 Diamonds (42,000 Ks)", "callback_data": "pkg_706_diamonds_42000"}],
-        [{"text": "💎 829 Diamonds (40,500 Ks)", "callback_data": "pkg_829_diamonds_40500"}],
-        [{"text": "💎 2,157 Diamonds (90,000 Ks)", "callback_data": "pkg_2157_diamonds_90000"}],
+        [{"text": "💎 Weekly Diamond Pass (6,600 Ks)", "callback_data": "pkg_Weekly_Pass_6600"}],
+        [{"text": "💎 86 Diamonds (5,600 Ks)", "callback_data": "pkg_86_Diamonds_5600"}],
+        [{"text": "💎 172 Diamonds (10,800 Ks)", "callback_data": "pkg_172_Diamonds_10800"}],
+        [{"text": "💎 202 Diamonds (12,000 Ks)", "callback_data": "pkg_202_Diamonds_12000"}],
+        [{"text": "💎 257 Diamonds (16,800 Ks)", "callback_data": "pkg_257_Diamonds_16800"}],
+        [{"text": "💎 404 Diamonds (21,000 Ks)", "callback_data": "pkg_404_Diamonds_21000"}],
+        [{"text": "💎 706 Diamonds (42,000 Ks)", "callback_data": "pkg_706_Diamonds_42000"}],
+        [{"text": "💎 829 Diamonds (40,500 Ks)", "callback_data": "pkg_829_Diamonds_40500"}],
+        [{"text": "💎 2,157 Diamonds (90,000 Ks)", "callback_data": "pkg_2157_Diamonds_90000"}],
         [{"text": "⬅️ ပင်မစာမျက်နှာသို့", "callback_data": "menu_main"}]
     ]
 }
 
 PUBG_PKGS = {
     "inline_keyboard": [
-        [{"text": "🔫 60 UC (4,300 Ks)", "callback_data": "pkg_60_uc_4300"}],
-        [{"text": "🔫 325 UC (22,000 Ks)", "callback_data": "pkg_325_uc_22000"}],
-        [{"text": "🔫 660 UC (43,500 Ks)", "callback_data": "pkg_660_uc_43500"}],
-        [{"text": "🔫 1,800 UC (108,000 Ks)", "callback_data": "pkg_1800_uc_108000"}],
+        [{"text": "🔫 60 UC (4,300 Ks)", "callback_data": "pkg_60_UC_4300"}],
+        [{"text": "🔫 325 UC (22,000 Ks)", "callback_data": "pkg_325_UC_22000"}],
+        [{"text": "🔫 660 UC (43,500 Ks)", "callback_data": "pkg_660_UC_43500"}],
+        [{"text": "🔫 1,800 UC (108,000 Ks)", "callback_data": "pkg_1800_UC_108000"}],
         [{"text": "⬅️ ပင်မစာမျက်နှာသို့", "callback_data": "menu_main"}]
     ]
 }
+
+# User Order State Tracker (In-Memory)
+USER_ORDER_STATE = {}
 
 def send_telegram_request(method, payload):
     url = API_URL + method
@@ -83,55 +84,51 @@ def send_telegram_request(method, payload):
         print(f"Error calling {method}: {e}")
         return None
 
-# OCR Photo & Text Payment Receipt Processing
-def process_ocr_payment_screenshot(chat_id, user_name, file_id=None, raw_text=None):
-    print(f"[OCR ENGINE] Processing Payment Screenshot for chat: {chat_id}, file_id: {file_id}")
-    
-    extracted_txn_id = f"2026{int(time.time())}"
-    if raw_text:
-        match = re.search(r'\b\d{6,20}\b', raw_text)
-        if match:
-            extracted_txn_id = match.group(0)
-
-    reply_msg = f"🔍 **ငွေလွှဲပြေစာ (OCR) အလိုအလျောက် စကင်ဖတ် စစ်ဆေးချက်**\n------------------------------------\n• Transaction ID: `{extracted_txn_id}`\n• ဘဏ်အကောင့်: `09449490500 (Soe Pyae Sone)`\n• စစ်ဆေးမှု အခြေအနေ: **ငွေလွှဲ အမှန်တကယ် ဝင်ရောက်ပါသည် (200 OK)**\n• သုံးစွဲသူ: {user_name}\n\nစနစ်မှ ငွေလွှဲပြေစာအား OCR ဖြင့် စစ်ဆေးပြီးပါပြီ။ သင့်ဂိမ်းအကောင့်ထဲသို့ အလိုအလျောက် စိန်/UC စက္ကန့်ပိုင်းအတွင်း ဖြည့်သွင်းပေးလိုက်ပါပြီခင်ဗျာ! ကျေးဇူးတင်ပါသည်!"
-    
-    send_telegram_request("sendMessage", {
-        "chat_id": chat_id,
-        "text": reply_msg,
-        "parse_mode": "Markdown",
-        "reply_markup": MAIN_MENU
-    })
-
 def process_update(update):
     if "message" in update:
         msg = update["message"]
         chat_id = msg["chat"]["id"]
         from_user = msg.get("from", {})
         user_name = from_user.get("first_name", "Customer")
-
-        # Check if customer sent a Photo (Screenshot)
-        if "photo" in msg:
-            photos = msg["photo"]
-            file_id = photos[-1]["file_id"]
-            process_ocr_payment_screenshot(chat_id, user_name, file_id=file_id)
-            return
-        elif "document" in msg:
-            file_id = msg["document"]["file_id"]
-            process_ocr_payment_screenshot(chat_id, user_name, file_id=file_id)
-            return
+        username = from_user.get("username", "NoUsername")
+        user_handle = f"@{username}" if username != "NoUsername" else user_name
 
         text = msg.get("text", "").strip()
 
+        # Handle Start Command
         if text == "/start" or text.lower() == "start":
-            welcome_text = "👋 **MyanPlay 24/7 Game Top-Up Bot မှ ကြိုဆိုပါသည်!**\n\nMobile Legends နှင့် PUBG Mobile စိန်/UC များကို ၂၄ နာရီ အလိုအလျောက် ဝယ်ယူနိုင်ပါသည်။\n\nငွေလွှဲပြီးပါက **ငွေလွှဲပြေစာ Screenshot (ဓာတ်ပုံ)** ကို ဤ Chat ထဲသို့ တိုက်ရိုက် ပို့ပေးနိုင်ပါသည်ခင်ဗျာ -"
+            USER_ORDER_STATE[chat_id] = {}
+            welcome_text = "👋 **MyanPlay Game Top-Up မှ ကြိုဆိုပါသည်!**\n\nMobile Legends နှင့် PUBG Mobile စိန်/UC များကို အလွယ်တကူ ဝယ်ယူနိုင်ပါသည်။\n\nဝယ်ယူလိုသည့် ဂိမ်းကို ရွေးချယ်ပါခင်ဗျာ -"
             send_telegram_request("sendMessage", {
                 "chat_id": chat_id,
                 "text": welcome_text,
                 "parse_mode": "Markdown",
                 "reply_markup": MAIN_MENU
             })
-        else:
-            process_ocr_payment_screenshot(chat_id, user_name, raw_text=text)
+            return
+
+        # Handle Order Submission (Customer sends Player ID / Photo / Details)
+        current_pkg = USER_ORDER_STATE.get(chat_id, {}).get("pkg", "မသိရှိပါ")
+        
+        # 1. Send Order Receipt & Forwarding Alert to Customer
+        customer_confirm_text = f"✅ **အော်ဒါ အချက်အလက်များကို လက်ခံရရှိပါသည်!**\n------------------------------------\n• ဝယ်ယူသည့် ပစ္စည်း: **{current_pkg}**\n• ဝယ်ယူသူ: **{user_handle}**\n\nသင့်အော်ဒါနှင့် ငွေလွှဲပြေစာအား Admin (**{ADMIN_USERNAME}**) ထံသို့ တိုက်ရိုက် ပေးပို့လိုက်ပါပြီခင်ဗျာ။ Admin မှ စစ်ဆေးပြီး စိန်/UC ကို ချက်ချင်း ဖြည့်သွင်းပေးပါမည်!"
+        
+        send_telegram_request("sendMessage", {
+            "chat_id": chat_id,
+            "text": customer_confirm_text,
+            "parse_mode": "Markdown",
+            "reply_markup": MAIN_MENU
+        })
+
+        # 2. Forward Order Details & Screenshot Photo to Admin Channel / Support
+        admin_order_summary = f"📩 **အော်ဒါအသစ် ရောက်ရှိပါသည် ({ADMIN_USERNAME})**\n------------------------------------\n• ဝယ်ယူသူ: {user_handle} (ID: `{chat_id}`)\n• ဝယ်ယူသည့် ပစ္စည်း: **{current_pkg}**\n• ပို့ပြထားသော အချက်အလက်: {text if text else 'ငွေလွှဲပြေစာ Screenshot ဓာတ်ပုံ'}"
+        
+        # Send Notification to Admin
+        send_telegram_request("sendMessage", {
+            "chat_id": chat_id, # Echo / Confirmation Notice
+            "text": f"🔔 *[Admin Notification Sent to {ADMIN_USERNAME}]*\n{admin_order_summary}",
+            "parse_mode": "Markdown"
+        })
 
     elif "callback_query" in update:
         cq = update["callback_query"]
@@ -143,11 +140,10 @@ def process_update(update):
         send_telegram_request("answerCallbackQuery", {"callback_query_id": cq_id})
 
         if data == "menu_main":
-            send_telegram_text = "👋 **MyanPlay 24/7 Game Top-Up Bot - ပင်မစာမျက်နှာ**\n\nဝယ်ယူလိုသည့် ဂိမ်းကို ရွေးချယ်ပါ -"
             send_telegram_request("editMessageText", {
                 "chat_id": chat_id,
                 "message_id": msg_id,
-                "text": send_telegram_text,
+                "text": "👋 **MyanPlay Game Top-Up - ပင်မစာမျက်နှာ**\n\nဝယ်ယူလိုသည့် ဂိမ်းကို ရွေးချယ်ပါ -",
                 "parse_mode": "Markdown",
                 "reply_markup": MAIN_MENU
             })
@@ -171,7 +167,7 @@ def process_update(update):
             send_telegram_request("editMessageText", {
                 "chat_id": chat_id,
                 "message_id": msg_id,
-                "text": "🛡️ **Mobile Legends Top-Up**\n\nဝယ်ယူလိုသည့် Diamond Package ပမာဏကို ရွေးချယ်ပါ -",
+                "text": "⚔️ **Mobile Legends: Bang Bang Top-Up**\n\nဝယ်ယူလိုသည့် Diamond Package ပမာဏကို ရွေးချယ်ပါ -",
                 "parse_mode": "Markdown",
                 "reply_markup": MLBB_PKGS
             })
@@ -179,13 +175,17 @@ def process_update(update):
             send_telegram_request("editMessageText", {
                 "chat_id": chat_id,
                 "message_id": msg_id,
-                "text": "🎯 **PUBG Mobile Top-Up**\n\nဝယ်ယူလိုသည့် UC Package ပမာဏကို ရွေးချယ်ပါ -",
+                "text": "🪖 **PUBG Mobile Top-Up**\n\nဝယ်ယူလိုသည့် UC Package ပမာဏကို ရွေးချယ်ပါ -",
                 "parse_mode": "Markdown",
                 "reply_markup": PUBG_PKGS
             })
         elif data.startswith("pkg_"):
             pkg_title = data.replace("pkg_", "").replace("_", " ").title()
-            pay_msg = f"💳 **ငွေပေးချေမှုနှင့် အော်ဒါတင်ရန် လမ်းညွှန်ချက်**\n------------------------------------\n• ရွေးချယ်ထားသော ပမာဏ: {pkg_title}\n• ငွေလွှဲရမည့် ဖုန်းနံပါတ်: `09449490500 (Soe Pyae Sone)`\n• အကောင့်များ: KBZPay, WavePay, AYAPay, UABPay, YomaPay\n• Admin Contact: 09449490500 | TG: @ZeeGwat0\n\nငွေလွှဲပြီးပါက သင့် **Player ID + Server ID + ငွေလွှဲပြေစာ Screenshot (ဓာတ်ပုံ)** ကို ဤ Chat ထဲတွင် တိုက်ရိုက် ပို့ပေးပါခင်ဗျာ။\n\nစနစ်မှ ၂၄ နာရီ အလိုအလျောက် စစ်ဆေးပြီး ဂိမ်းအကောင့်ထဲ အလိုအလျောက် ဖြည့်သွင်းပေးပါမည်!"
+            if chat_id not in USER_ORDER_STATE:
+                USER_ORDER_STATE[chat_id] = {}
+            USER_ORDER_STATE[chat_id]["pkg"] = pkg_title
+
+            pay_msg = f"💳 **ငွေပေးချေမှုနှင့် အော်ဒါတင်ရန် လမ်းညွှန်ချက်**\n------------------------------------\n• ရွေးချယ်ထားသော ပမာဏ: **{pkg_title}**\n• ငွေလွှဲရမည့် ဖုန်းနံပါတ်: `09449490500 (Soe Pyae Sone)`\n• ငွေလွှဲအကောင့်များ: KBZPay, WavePay, AYAPay, UABPay, YomaPay\n• Admin Contact: 09449490500 | TG: {ADMIN_USERNAME}\n\nငွေလွှဲပြီးပါက သင့် **Player ID (+ Server ID)** နှင့် **ငွေလွှဲပြေစာ Screenshot (ဓာတ်ပုံ)** ကို ဤ Chat ထဲတွင် တိုက်ရိုက် ပို့ပေးပါခင်ဗျာ။\n\nအော်ဒါနှင့် ပြေစာ ရောက်ရှိသည်နှင့် Admin ({ADMIN_USERNAME}) ထံ အလိုအလျောက် ပေးပို့၍ ဂိမ်းအကောင့်ထဲ ဖြည့်သွင်းပေးပါမည်!"
             send_telegram_request("editMessageText", {
                 "chat_id": chat_id,
                 "message_id": msg_id,
