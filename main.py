@@ -7,8 +7,9 @@ import os
 BOT_TOKEN = "8930956292:AAHFWpit3gyqs8cCpvPAnyueb14hJwFwyAE"
 API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}/"
 
-# Admin Telegram Username
+# Admin Telegram Info
 ADMIN_USERNAME = "@ZeeGwat0"
+ADMIN_CHAT_ID = os.environ.get("ADMIN_CHAT_ID", None)
 
 PAYMENT_INFO = """
 💳 **ငွေပေးချေမှု အကောင့်များ (09449490500 - Soe Pyae Sone)**
@@ -85,6 +86,7 @@ def send_telegram_request(method, payload):
         return None
 
 def process_update(update):
+    global ADMIN_CHAT_ID
     if "message" in update:
         msg = update["message"]
         chat_id = msg["chat"]["id"]
@@ -95,7 +97,19 @@ def process_update(update):
 
         text = msg.get("text", "").strip()
 
-        # Handle Start Command
+        # Admin Setup Detection (If Admin sends /admin or /start)
+        if username.lower() == "zeegwat0" or text == "/admin":
+            ADMIN_CHAT_ID = chat_id
+            print(f"👑 ADMIN CHAT ID DETECTED & SET TO: {ADMIN_CHAT_ID}")
+            send_telegram_request("sendMessage", {
+                "chat_id": chat_id,
+                "text": f"👑 **Admin Account အဖြစ် အောင်မြင်စွာ ချိတ်ဆက်ပြီးပါပြီ!**\n------------------------------------\n• Admin Chat ID: `{chat_id}`\n• Admin Username: @{username}\n\nဝယ်ယူသူများ အော်ဒါနှင့် ငွေလွှဲပြေစာ ပို့လိုက်ပါက သင့်ထံသို့ တိုက်ရိုက် ရောက်ရှိမည် ဖြစ်ပါသည်ခင်ဗျာ!",
+                "parse_mode": "Markdown",
+                "reply_markup": MAIN_MENU
+            })
+            return
+
+        # Handle Start Command for Customers
         if text == "/start" or text.lower() == "start":
             USER_ORDER_STATE[chat_id] = {}
             welcome_text = "👋 **MyanPlay Game Top-Up မှ ကြိုဆိုပါသည်!**\n\nMobile Legends နှင့် PUBG Mobile စိန်/UC များကို အလွယ်တကူ ဝယ်ယူနိုင်ပါသည်။\n\nဝယ်ယူလိုသည့် ဂိမ်းကို ရွေးချယ်ပါခင်ဗျာ -"
@@ -110,9 +124,8 @@ def process_update(update):
         # Handle Order Submission (Customer sends Player ID / Photo / Details)
         current_pkg = USER_ORDER_STATE.get(chat_id, {}).get("pkg", "မသိရှိပါ")
         
-        # 1. Send Order Receipt & Forwarding Alert to Customer
+        # 1. Send Confirmation Notice to Customer
         customer_confirm_text = f"✅ **အော်ဒါ အချက်အလက်များကို လက်ခံရရှိပါသည်!**\n------------------------------------\n• ဝယ်ယူသည့် ပစ္စည်း: **{current_pkg}**\n• ဝယ်ယူသူ: **{user_handle}**\n\nသင့်အော်ဒါနှင့် ငွေလွှဲပြေစာအား Admin (**{ADMIN_USERNAME}**) ထံသို့ တိုက်ရိုက် ပေးပို့လိုက်ပါပြီခင်ဗျာ။ Admin မှ စစ်ဆေးပြီး စိန်/UC ကို ချက်ချင်း ဖြည့်သွင်းပေးပါမည်!"
-        
         send_telegram_request("sendMessage", {
             "chat_id": chat_id,
             "text": customer_confirm_text,
@@ -120,15 +133,26 @@ def process_update(update):
             "reply_markup": MAIN_MENU
         })
 
-        # 2. Forward Order Details & Screenshot Photo to Admin Channel / Support
-        admin_order_summary = f"📩 **အော်ဒါအသစ် ရောက်ရှိပါသည် ({ADMIN_USERNAME})**\n------------------------------------\n• ဝယ်ယူသူ: {user_handle} (ID: `{chat_id}`)\n• ဝယ်ယူသည့် ပစ္စည်း: **{current_pkg}**\n• ပို့ပြထားသော အချက်အလက်: {text if text else 'ငွေလွှဲပြေစာ Screenshot ဓာတ်ပုံ'}"
+        # 2. Forward Order Details & Screenshot Photo directly to Admin Chat ID / Admin
+        admin_order_summary = f"📩 **အော်ဒါအသစ် ရောက်ရှိပါသည်!**\n------------------------------------\n• ဝယ်ယူသူ: {user_handle} (Chat ID: `{chat_id}`)\n• ဝယ်ယူသည့် ပစ္စည်း: **{current_pkg}**\n• ပို့ပြထားသော အချက်အလက်: {text if text else 'ငွေလွှဲပြေစာ Screenshot ဓာတ်ပုံ'}"
         
-        # Send Notification to Admin
-        send_telegram_request("sendMessage", {
-            "chat_id": chat_id, # Echo / Confirmation Notice
-            "text": f"🔔 *[Admin Notification Sent to {ADMIN_USERNAME}]*\n{admin_order_summary}",
-            "parse_mode": "Markdown"
-        })
+        target_admin = ADMIN_CHAT_ID if ADMIN_CHAT_ID else chat_id
+        
+        # Forward Message or Photo to Admin
+        if "photo" in msg:
+            photo_id = msg["photo"][-1]["file_id"]
+            send_telegram_request("sendPhoto", {
+                "chat_id": target_admin,
+                "photo": photo_id,
+                "caption": admin_order_summary,
+                "parse_mode": "Markdown"
+            })
+        else:
+            send_telegram_request("sendMessage", {
+                "chat_id": target_admin,
+                "text": admin_order_summary,
+                "parse_mode": "Markdown"
+            })
 
     elif "callback_query" in update:
         cq = update["callback_query"]
@@ -140,26 +164,29 @@ def process_update(update):
         send_telegram_request("answerCallbackQuery", {"callback_query_id": cq_id})
 
         if data == "menu_main":
+            send_telegram_text = "👋 **MyanPlay Game Top-Up - ပင်မစာမျက်နှာ**\n\nဝယ်ယူလိုသည့် ဂိမ်းကို ရွေးချယ်ပါ -"
             send_telegram_request("editMessageText", {
                 "chat_id": chat_id,
                 "message_id": msg_id,
-                "text": "👋 **MyanPlay Game Top-Up - ပင်မစာမျက်နှာ**\n\nဝယ်ယူလိုသည့် ဂိမ်းကို ရွေးချယ်ပါ -",
+                "text": send_telegram_text,
                 "parse_mode": "Markdown",
                 "reply_markup": MAIN_MENU
             })
         elif data == "menu_payment":
+            send_telegram_text = PAYMENT_INFO
             send_telegram_request("editMessageText", {
                 "chat_id": chat_id,
                 "message_id": msg_id,
-                "text": PAYMENT_INFO,
+                "text": send_telegram_text,
                 "parse_mode": "Markdown",
                 "reply_markup": {"inline_keyboard": [[{"text": "⬅️ ပင်မစာမျက်နှာသို့", "callback_data": "menu_main"}]]}
             })
         elif data == "menu_support":
+            send_telegram_text = SUPPORT_INFO
             send_telegram_request("editMessageText", {
                 "chat_id": chat_id,
                 "message_id": msg_id,
-                "text": SUPPORT_INFO,
+                "text": send_telegram_text,
                 "parse_mode": "Markdown",
                 "reply_markup": {"inline_keyboard": [[{"text": "⬅️ ပင်မစာမျက်နှာသို့", "callback_data": "menu_main"}]]}
             })
