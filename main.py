@@ -19,28 +19,46 @@ PAYMENT_INFO = """
 ငွေလွှဲပြီးပါက ရရှိလာသော Transaction ID (သို့မဟုတ် အနောက်ဆုံး ၆ လုံး) ကို အော်ဒါတင်သည့်အခါ ရိုက်ထည့်ပေးပါခင်ဗျာ။
 """
 
+SUPPORT_INFO = """
+📞 **Admin Contact & Support**
+------------------------------------
+• Phone: 09449490500
+• Telegram Admin: @ZeeGwat0
+• Website: https://myanplay.vercel.app
+
+အော်ဒါများနှင့် ပတ်သက်၍ အကူအညီ လိုအပ်ပါက သို့မဟုတ် မေးမြန်းလိုပါက Admin ထံ တိုက်ရိုက် ဆက်သွယ်နိုင်ပါသည်ခင်ဗျာ။
+"""
+
 MAIN_MENU = {
     "inline_keyboard": [
-        [{"text": "🎮 Direct Player ID Top-Up", "callback_data": "menu_direct"}],
-        [{"text": "🎁 Voucher & Gift Cards (24/7 Auto)", "callback_data": "menu_voucher"}],
+        [{"text": "🛡️ Mobile Legends", "callback_data": "game_mlbb"}],
+        [{"text": "🎯 PUBG Mobile", "callback_data": "game_pubg"}],
         [{"text": "💳 ငွေပေးချေမှု အကောင့်များ", "callback_data": "menu_payment"}],
         [{"text": "📞 Admin Contact / Support", "callback_data": "menu_support"}]
     ]
 }
 
-DIRECT_GAMES_MENU = {
+MLBB_PKGS = {
     "inline_keyboard": [
-        [{"text": "🛡️ Mobile Legends", "callback_data": "game_mlbb"}, {"text": "🎯 PUBG Mobile", "callback_data": "game_pubg"}],
-        [{"text": "🔥 Free Fire", "callback_data": "game_freefire"}, {"text": "👑 Honor of Kings", "callback_data": "game_hok"}],
+        [{"text": "💎 Weekly Diamond Pass (6,600 Ks)", "callback_data": "pkg_weekly_pass_6600"}],
+        [{"text": "💎 86 Diamonds (5,600 Ks)", "callback_data": "pkg_86_diamonds_5600"}],
+        [{"text": "💎 172 Diamonds (10,800 Ks)", "callback_data": "pkg_172_diamonds_10800"}],
+        [{"text": "💎 202 Diamonds (12,000 Ks)", "callback_data": "pkg_202_diamonds_12000"}],
+        [{"text": "💎 257 Diamonds (16,800 Ks)", "callback_data": "pkg_257_diamonds_16800"}],
+        [{"text": "💎 404 Diamonds (21,000 Ks)", "callback_data": "pkg_404_diamonds_21000"}],
+        [{"text": "💎 706 Diamonds (42,000 Ks)", "callback_data": "pkg_706_diamonds_42000"}],
+        [{"text": "💎 829 Diamonds (40,500 Ks)", "callback_data": "pkg_829_diamonds_40500"}],
+        [{"text": "💎 2,157 Diamonds (90,000 Ks)", "callback_data": "pkg_2157_diamonds_90000"}],
         [{"text": "⬅️ ပင်မစာမျက်နှာသို့", "callback_data": "menu_main"}]
     ]
 }
 
-VOUCHER_GAMES_MENU = {
+PUBG_PKGS = {
     "inline_keyboard": [
-        [{"text": "🎁 Roblox Gift Card", "callback_data": "vgame_roblox"}],
-        [{"text": "🎮 Steam Wallet Card", "callback_data": "vgame_steam"}],
-        [{"text": "⭐ Telegram Stars", "callback_data": "vgame_stars"}],
+        [{"text": "🔫 60 UC (4,300 Ks)", "callback_data": "pkg_60_uc_4300"}],
+        [{"text": "🔫 325 UC (22,000 Ks)", "callback_data": "pkg_325_uc_22000"}],
+        [{"text": "🔫 660 UC (43,500 Ks)", "callback_data": "pkg_660_uc_43500"}],
+        [{"text": "🔫 1,800 UC (108,000 Ks)", "callback_data": "pkg_1800_uc_108000"}],
         [{"text": "⬅️ ပင်မစာမျက်နှာသို့", "callback_data": "menu_main"}]
     ]
 }
@@ -64,7 +82,7 @@ def process_update(update):
     if "message" in update:
         msg = update["message"]
         chat_id = msg["chat"]["id"]
-        welcome_text = "👋 **MyanPlay 24/7 Game Top-Up Bot မှ ကြိုဆိုပါသည်!**\n\n၂၄ နာရီ ပိတ်ရက်မရှိ ဂိမ်းစိန်/UC နှင့် Gift Card များကို အလိုအလျောက် ဝယ်ယူနိုင်ပါသည်။\n\nအောက်ပါ Menu များမှ စတင် ရွေးချယ်နိုင်ပါသည်ခင်ဗျာ -"
+        welcome_text = "👋 **MyanPlay 24/7 Game Top-Up Bot မှ ကြိုဆိုပါသည်!**\n\nMobile Legends နှင့် PUBG Mobile စိန်/UC များကို ၂၄ နာရီ အလိုအလျောက် ဝယ်ယူနိုင်ပါသည်။\n\nဝယ်ယူလိုသည့် ဂိမ်းကို ရွေးချယ်ပါခင်ဗျာ -"
         send_telegram_request("sendMessage", {
             "chat_id": chat_id,
             "text": welcome_text,
@@ -85,32 +103,49 @@ def process_update(update):
             send_telegram_request("editMessageText", {
                 "chat_id": chat_id,
                 "message_id": msg_id,
-                "text": "👋 **MyanPlay 24/7 Game Top-Up Bot - ပင်မစာမျက်နှာ**\n\nဝယ်ယူလိုသည့် ဝန်ဆောင်မှုကို ရွေးချယ်ပါ -",
+                "text": "👋 **MyanPlay 24/7 Game Top-Up Bot - ပင်မစာမျက်နှာ**\n\nဝယ်ယူလိုသည့် ဂိမ်းကို ရွေးချယ်ပါ -",
                 "parse_mode": "Markdown",
                 "reply_markup": MAIN_MENU
-            })
-        elif data == "menu_direct":
-            send_telegram_request("editMessageText", {
-                "chat_id": chat_id,
-                "message_id": msg_id,
-                "text": "🎮 **Direct Player ID Top-Up**\n\nဂိမ်းအကောင့်ထဲသို့ တိုက်ရိုက် ဖြည့်သွင်းလိုသည့် ဂိမ်းကို ရွေးချယ်ပါ -",
-                "parse_mode": "Markdown",
-                "reply_markup": DIRECT_GAMES_MENU
-            })
-        elif data == "menu_voucher":
-            send_telegram_text = "🎁 **24/7 Instant Voucher & Gift Cards**\n\nဝယ်ယူလိုသည့် Gift Card / Digital Code အမျိုးအစားကို ရွေးချယ်ပါ -"
-            send_telegram_request("editMessageText", {
-                "chat_id": chat_id,
-                "message_id": msg_id,
-                "text": send_telegram_text,
-                "parse_mode": "Markdown",
-                "reply_markup": VOUCHER_GAMES_MENU
             })
         elif data == "menu_payment":
             send_telegram_request("editMessageText", {
                 "chat_id": chat_id,
                 "message_id": msg_id,
                 "text": PAYMENT_INFO,
+                "parse_mode": "Markdown",
+                "reply_markup": {"inline_keyboard": [[{"text": "⬅️ ပင်မစာမျက်နှာသို့", "callback_data": "menu_main"}]]}
+            })
+        elif data == "menu_support":
+            send_telegram_request("editMessageText", {
+                "chat_id": chat_id,
+                "message_id": msg_id,
+                "text": SUPPORT_INFO,
+                "parse_mode": "Markdown",
+                "reply_markup": {"inline_keyboard": [[{"text": "⬅️ ပင်မစာမျက်နှာသို့", "callback_data": "menu_main"}]]}
+            })
+        elif data == "game_mlbb":
+            send_telegram_request("editMessageText", {
+                "chat_id": chat_id,
+                "message_id": msg_id,
+                "text": "🛡️ **Mobile Legends Top-Up**\n\nဝယ်ယူလိုသည့် Diamond Package ပမာဏကို ရွေးချယ်ပါ -",
+                "parse_mode": "Markdown",
+                "reply_markup": MLBB_PKGS
+            })
+        elif data == "game_pubg":
+            send_telegram_request("editMessageText", {
+                "chat_id": chat_id,
+                "message_id": msg_id,
+                "text": "🎯 **PUBG Mobile Top-Up**\n\nဝယ်ယူလိုသည့် UC Package ပမာဏကို ရွေးချယ်ပါ -",
+                "parse_mode": "Markdown",
+                "reply_markup": PUBG_PKGS
+            })
+        elif data.startswith("pkg_"):
+            pkg_title = data.replace("pkg_", "").replace("_", " ").title()
+            pay_msg = f"💳 **ငွေပေးချေမှုနှင့် အော်ဒါတင်ရန် လမ်းညွှန်ချက်**\n------------------------------------\n• ရွေးချယ်ထားသော ပမာဏ: {pkg_title}\n• ငွေလွှဲရမည့် ဖုန်းနံပါတ်: `09449490500` (KBZPay, WavePay, AYAPay, UABPay, YomaPay)\n• Admin Contact: 09449490500 | TG: @ZeeGwat0\n\nငွေလွှဲပြီးပါက သင့် **Player ID + Server ID + Transaction ID (အနောက်ဆုံး ၆ လုံး)** ကို ဤ Chat ထဲတွင် ရိုက်ထည့်ပေးပါခင်ဗျာ။\n\nစနစ်မှ ၂၄ နာရီ အလိုအလျောက် စစ်ဆေးပြီး ဂိမ်းအကောင့်ထဲ အလိုအလျောက် ဖြည့်သွင်းပေးပါမည်!"
+            send_telegram_request("editMessageText", {
+                "chat_id": chat_id,
+                "message_id": msg_id,
+                "text": pay_msg,
                 "parse_mode": "Markdown",
                 "reply_markup": {"inline_keyboard": [[{"text": "⬅️ ပင်မစာမျက်နှာသို့", "callback_data": "menu_main"}]]}
             })
@@ -145,4 +180,3 @@ if __name__ == "__main__":
     print(f"Starting Webhook HTTP Server on port {port}...")
     server = socketserver.TCPServer(("", port), WebhookHandler)
     server.serve_forever()
-                                  
