@@ -27,7 +27,7 @@ SUPPORT_INFO = f"""
 📞 **Admin Contact & Support**
 ------------------------------------
 • Phone: 09449490500 (Soe Pyae Sone)
-• Telegram Admin: {ADMIN_USERNAME}
+• Telegram Admin: {@ZeeGwat0}
 • Website: https://myanplay.vercel.app
 
 အော်ဒါများနှင့် ပတ်သက်၍ အကူအညီ လိုအပ်ပါက သို့မဟုတ် မေးမြန်းလိုပါက Admin ({ADMIN_USERNAME}) ထံ တိုက်ရိုက် ဆက်သွယ်နိုင်ပါသည်ခင်ဗျာ။
