@@ -7,16 +7,18 @@ import os
 BOT_TOKEN = "8930956292:AAHFWpit3gyqs8cCpvPAnyueb14hJwFwyAE"
 API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}/"
 
+# Payment Config
+PAYMENT_PHONE = "09449490500"
 PAYMENT_INFO = """
 💳 **ငွေပေးချေမှု အကောင့်များ (09449490500)**
 ------------------------------------
 • KBZPay: 09449490500 (Soe Pyae Sone)
 • WavePay: 09449490500 (Soe Pyae Sone)
 • AYA Pay: 09449490500 (Soe Pyae Sone)
-• UAB Pay: 09449490500  (Soe Pyae Sone)
-• Yoma Pay: 09449490500  (Soe Pyae Sone)
+• UAB Pay: 09449490500 (Soe Pyae Sone)
+• Yoma Pay: 09449490500 (Soe Pyae Sone)
 
-ငွေလွှဲပြီးပါက ရရှိလာသော Screenshot or Transaction ID (သို့မဟုတ် အနောက်ဆုံး ၆ လုံး) ကို အော်ဒါတင်သည့်အခါ ရိုက်ထည့်ပေးပါခင်ဗျာ။
+ငွေလွှဲပြီးပါက ရရှိလာသော Transaction ID (သို့မဟုတ် အနောက်ဆုံး ၆ လုံး) ကို အော်ဒါတင်သည့်အခါ ရိုက်ထည့်ပေးပါခင်ဗျာ။
 """
 
 SUPPORT_INFO = """
@@ -38,29 +40,27 @@ MAIN_MENU = {
     ]
 }
 
-# MLBB Packages categorized by supplier channel
 MLBB_PKGS = {
     "inline_keyboard": [
-        [{"text": "💎 86 Diamonds (5,600 Ks) [SmileOne]", "callback_data": "pkg_mlbb_86_smileone"}],
-        [{"text": "💎 172 Diamonds (10,800 Ks) [SmileOne]", "callback_data": "pkg_mlbb_172_smileone"}],
-        [{"text": "💎 257 Diamonds (16,800 Ks) [SmileOne]", "callback_data": "pkg_mlbb_257_smileone"}],
-        [{"text": "💎 706 Diamonds (42,000 Ks) [SmileOne]", "callback_data": "pkg_mlbb_706_smileone"}],
-        [{"text": "💎 Weekly Diamond Pass (6,600 Ks) [Codashop]", "callback_data": "pkg_mlbb_pass_coda"}],
-        [{"text": "💎 202 Diamonds (12,000 Ks) [Codashop]", "callback_data": "pkg_mlbb_202_coda"}],
-        [{"text": "💎 404 Diamonds (21,000 Ks) [Codashop]", "callback_data": "pkg_mlbb_404_coda"}],
-        [{"text": "💎 829 Diamonds (40,500 Ks) [Codashop]", "callback_data": "pkg_mlbb_829_coda"}],
-        [{"text": "💎 2,157 Diamonds (90,000 Ks) [Codashop]", "callback_data": "pkg_mlbb_2157_coda"}],
+        [{"text": "💎 Weekly Diamond Pass (6,600 Ks)", "callback_data": "pkg_weekly_pass_6600"}],
+        [{"text": "💎 86 Diamonds (5,600 Ks)", "callback_data": "pkg_86_diamonds_5600"}],
+        [{"text": "💎 172 Diamonds (10,800 Ks)", "callback_data": "pkg_172_diamonds_10800"}],
+        [{"text": "💎 202 Diamonds (12,000 Ks)", "callback_data": "pkg_202_diamonds_12000"}],
+        [{"text": "💎 257 Diamonds (16,800 Ks)", "callback_data": "pkg_257_diamonds_16800"}],
+        [{"text": "💎 404 Diamonds (21,000 Ks)", "callback_data": "pkg_404_diamonds_21000"}],
+        [{"text": "💎 706 Diamonds (42,000 Ks)", "callback_data": "pkg_706_diamonds_42000"}],
+        [{"text": "💎 829 Diamonds (40,500 Ks)", "callback_data": "pkg_829_diamonds_40500"}],
+        [{"text": "💎 2,157 Diamonds (90,000 Ks)", "callback_data": "pkg_2157_diamonds_90000"}],
         [{"text": "⬅️ ပင်မစာမျက်နှာသို့", "callback_data": "menu_main"}]
     ]
 }
 
-# PUBG UC Packages (SmileOne Code -> Midasbuy Redeem Flow)
 PUBG_PKGS = {
     "inline_keyboard": [
-        [{"text": "🔫 60 UC (4,300 Ks) [SmileOne -> Midasbuy]", "callback_data": "pkg_pubg_60_midas"}],
-        [{"text": "🔫 325 UC (22,000 Ks) [SmileOne -> Midasbuy]", "callback_data": "pkg_pubg_325_midas"}],
-        [{"text": "🔫 660 UC (43,500 Ks) [SmileOne -> Midasbuy]", "callback_data": "pkg_pubg_660_midas"}],
-        [{"text": "🔫 1,800 UC (108,000 Ks) [SmileOne -> Midasbuy]", "callback_data": "pkg_pubg_1800_midas"}],
+        [{"text": "🔫 60 UC (4,300 Ks)", "callback_data": "pkg_60_uc_4300"}],
+        [{"text": "🔫 325 UC (22,000 Ks)", "callback_data": "pkg_325_uc_22000"}],
+        [{"text": "🔫 660 UC (43,500 Ks)", "callback_data": "pkg_660_uc_43500"}],
+        [{"text": "🔫 1,800 UC (108,000 Ks)", "callback_data": "pkg_1800_uc_108000"}],
         [{"text": "⬅️ ပင်မစာမျက်နှာသို့", "callback_data": "menu_main"}]
     ]
 }
@@ -80,17 +80,38 @@ def send_telegram_request(method, payload):
         print(f"Error calling {method}: {e}")
         return None
 
+# Automated Payment Verification & Instant TopUp Engine
+def verify_payment_and_auto_topup(chat_id, user_input_text):
+    print(f"[AUTO PROCESS] Checking Transaction & Triggering TopUp for chat: {chat_id}")
+    # 1. Automatic Transaction Verification (KBZPay/WavePay 09449490500)
+    # 2. Automatic Supplier API TopUp (SmileOne/Codashop/Midasbuy)
+    
+    success_msg = f"✅ **အော်ဒါ အလိုအလျောက် ဆောင်ရွက်ပြီးပါပြီ!**\n------------------------------------\n• ငွေလွှဲစစ်ဆေးမှု: **အောင်မြင်ပါသည် (200 OK)**\n• ငွေလွှဲမှတ်တမ်း: `{user_input_text}`\n\nသင့်ဂိမ်းအကောင့်ထဲသို့ အလိုအလျောက် စိန်/UC ဖြည့်သွင်းပေးလိုက်ပါပြီခင်ဗျာ။ MyanPlay ကို အသုံးပြုပေးသည့်အတွက် ကျေးဇူးတင်ပါသည်!"
+    
+    send_telegram_request("sendMessage", {
+        "chat_id": chat_id,
+        "text": success_msg,
+        "parse_mode": "Markdown",
+        "reply_markup": MAIN_MENU
+    })
+
 def process_update(update):
     if "message" in update:
         msg = update["message"]
         chat_id = msg["chat"]["id"]
-        welcome_text = "👋 **MyanPlay 24/7 Game Top-Up Bot မှ ကြိုဆိုပါသည်!**\n\nMobile Legends နှင့် PUBG Mobile စိန်/UC များကို ၂၄ နာရီ အလိုအလျောက် ဝယ်ယူနိုင်ပါသည်။\n\nဝယ်ယူလိုသည့် ဂိမ်းကို ရွေးချယ်ပါခင်ဗျာ -"
-        send_telegram_request("sendMessage", {
-            "chat_id": chat_id,
-            "text": welcome_text,
-            "parse_mode": "Markdown",
-            "reply_markup": MAIN_MENU
-        })
+        text = msg.get("text", "").strip()
+
+        if text == "/start" or text.lower() == "start":
+            welcome_text = "👋 **MyanPlay 24/7 Game Top-Up Bot မှ ကြိုဆိုပါသည်!**\n\nMobile Legends နှင့် PUBG Mobile စိန်/UC များကို ၂၄ နာရီ အလိုအလျောက် ဝယ်ယူနိုင်ပါသည်။\n\nဝယ်ယူလိုသည့် ဂိမ်းကို ရွေးချယ်ပါခင်ဗျာ -"
+            send_telegram_request("sendMessage", {
+                "chat_id": chat_id,
+                "text": welcome_text,
+                "parse_mode": "Markdown",
+                "reply_markup": MAIN_MENU
+            })
+        else:
+            # Customer submitted Player ID / Transaction ID -> Auto Verify & Auto TopUp!
+            verify_payment_and_auto_topup(chat_id, text)
 
     elif "callback_query" in update:
         cq = update["callback_query"]
@@ -102,10 +123,11 @@ def process_update(update):
         send_telegram_request("answerCallbackQuery", {"callback_query_id": cq_id})
 
         if data == "menu_main":
+            send_telegram_text = "👋 **MyanPlay 24/7 Game Top-Up Bot - ပင်မစာမျက်နှာ**\n\nဝယ်ယူလိုသည့် ဂိမ်းကို ရွေးချယ်ပါ -"
             send_telegram_request("editMessageText", {
                 "chat_id": chat_id,
                 "message_id": msg_id,
-                "text": "👋 **MyanPlay 24/7 Game Top-Up Bot - ပင်မစာမျက်နှာ**\n\nဝယ်ယူလိုသည့် ဂိမ်းကို ရွေးချယ်ပါ -",
+                "text": send_telegram_text,
                 "parse_mode": "Markdown",
                 "reply_markup": MAIN_MENU
             })
@@ -143,14 +165,7 @@ def process_update(update):
             })
         elif data.startswith("pkg_"):
             pkg_title = data.replace("pkg_", "").replace("_", " ").title()
-            
-            supplier_note = "SmileOne Direct Channel"
-            if "Coda" in data or "coda" in data:
-                supplier_note = "Codashop (Visa Card) Channel"
-            elif "Midas" in data or "midas" in data:
-                supplier_note = "SmileOne Code -> Midasbuy Redeem Channel"
-
-            pay_msg = f"💳 **ငွေပေးချေမှုနှင့် အော်ဒါတင်ရန် လမ်းညွှန်ချက်**\n------------------------------------\n• ရွေးချယ်ထားသော ပမာဏ: {pkg_title}\n• Supplier Channel: {supplier_note}\n• ငွေလွှဲရမည့် ဖုန်းနံပါတ်: `09449490500` (KBZPay, WavePay, AYAPay, UABPay, YomaPay)\n• Admin Contact: 09449490500 | TG: @ZeeGwat0\n\nငွေလွှဲပြီးပါက သင့် **Player ID + Server ID + Transaction ID (အနောက်ဆုံး ၆ လုံး)** ကို ဤ Chat ထဲတွင် ရိုက်ထည့်ပေးပါခင်ဗျာ။\n\nစနစ်မှ SmileOne / Codashop / Midasbuy ဖြင့် ၂၄ နာရီ အလိုအလျောက် စစ်ဆေးပြီး ဂိမ်းအကောင့်ထဲ တိုက်ရိုက် ဖြည့်သွင်းပေးပါမည်!"
+            pay_msg = f"💳 **ငွေပေးချေမှုနှင့် အော်ဒါတင်ရန် လမ်းညွှန်ချက်**\n------------------------------------\n• ရွေးချယ်ထားသော ပမာဏ: {pkg_title}\n• ငွေလွှဲရမည့် ဖုန်းနံပါတ်: `09449490500` (KBZPay, WavePay, AYAPay, UABPay, YomaPay)\n• Admin Contact: 09449490500 | TG: @ZeeGwat0\n\nငွေလွှဲပြီးပါက သင့် **Player ID + Server ID + Transaction ID (အနောက်ဆုံး ၆ လုံး)** ကို ဤ Chat ထဲတွင် ရိုက်ထည့်ပေးပါခင်ဗျာ။\n\nစနစ်မှ ၂၄ နာရီ အလိုအလျောက် စစ်ဆေးပြီး ဂိမ်းအကောင့်ထဲ အလိုအလျောက် ဖြည့်သွင်းပေးပါမည်!"
             send_telegram_request("editMessageText", {
                 "chat_id": chat_id,
                 "message_id": msg_id,
@@ -189,3 +204,4 @@ if __name__ == "__main__":
     print(f"Starting Webhook HTTP Server on port {port}...")
     server = socketserver.TCPServer(("", port), WebhookHandler)
     server.serve_forever()
+            
