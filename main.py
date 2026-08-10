@@ -10,13 +10,13 @@ API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}/"
 PAYMENT_INFO = """
 💳 **ငွေပေးချေမှု အကောင့်များ (09449490500)**
 ------------------------------------
-• KBZPay: 09449490500 (MyanPlay TopUp)
-• WavePay: 09449490500 (MyanPlay TopUp)
-• AYA Pay: 09449490500
-• UAB Pay: 09449490500
-• Yoma Pay: 09449490500
+• KBZPay: 09449490500 (Soe Pyae Sone)
+• WavePay: 09449490500 (Soe Pyae Sone)
+• AYA Pay: 09449490500 (Soe Pyae Sone)
+• UAB Pay: 09449490500 (Soe Pyae Sone)
+• Yoma Pay: 09449490500 (Soe Pyae Sone)
 
-ငွေလွှဲပြီးပါက ရရှိလာသော Transaction ID (သို့မဟုတ် အနောက်ဆုံး ၆ လုံး) ကို အော်ဒါတင်သည့်အခါ ရိုက်ထည့်ပေးပါခင်ဗျာ။
+ငွေလွှဲပြီးပါက ရရှိလာသော Screenshot or Transaction ID (သို့မဟုတ် အနောက်ဆုံး ၆ လုံး) ကို အော်ဒါတင်သည့်အခါ ရိုက်ထည့်ပေးပါခင်ဗျာ။
 """
 
 SUPPORT_INFO = """
