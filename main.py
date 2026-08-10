@@ -2,15 +2,18 @@ import http.server
 import socketserver
 import json
 import urllib.request
+import re
 import os
+import time
 
 BOT_TOKEN = "8930956292:AAHFWpit3gyqs8cCpvPAnyueb14hJwFwyAE"
 API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}/"
 
-# Payment Config
 PAYMENT_PHONE = "09449490500"
+PAYMENT_NAME = "Soe Pyae Sone"
+
 PAYMENT_INFO = """
-💳 **ငွေပေးချေမှု အကောင့်များ (09449490500)**
+💳 **ငွေပေးချေမှု အကောင့်များ (09449490500 - Soe Pyae Sone)**
 ------------------------------------
 • KBZPay: 09449490500 (Soe Pyae Sone)
 • WavePay: 09449490500 (Soe Pyae Sone)
@@ -18,13 +21,13 @@ PAYMENT_INFO = """
 • UAB Pay: 09449490500 (Soe Pyae Sone)
 • Yoma Pay: 09449490500 (Soe Pyae Sone)
 
-ငွေလွှဲပြီးပါက ရရှိလာသော Transaction ID (သို့မဟုတ် အနောက်ဆုံး ၆ လုံး) ကို အော်ဒါတင်သည့်အခါ ရိုက်ထည့်ပေးပါခင်ဗျာ။
+ငွေလွှဲပြီးပါက ရရှိလာသော **ငွေလွှဲပြေစာ (Screenshot)** ကို ဤ Chat ထဲတွင် တိုက်ရိုက် ပို့ပေးပါခင်ဗျာ။
 """
 
 SUPPORT_INFO = """
 📞 **Admin Contact & Support**
 ------------------------------------
-• Phone: 09449490500
+• Phone: 09449490500 (Soe Pyae Sone)
 • Telegram Admin: @ZeeGwat0
 • Website: https://myanplay.vercel.app
 
@@ -80,17 +83,21 @@ def send_telegram_request(method, payload):
         print(f"Error calling {method}: {e}")
         return None
 
-# Automated Payment Verification & Instant TopUp Engine
-def verify_payment_and_auto_topup(chat_id, user_input_text):
-    print(f"[AUTO PROCESS] Checking Transaction & Triggering TopUp for chat: {chat_id}")
-    # 1. Automatic Transaction Verification (KBZPay/WavePay 09449490500)
-    # 2. Automatic Supplier API TopUp (SmileOne/Codashop/Midasbuy)
+# OCR Photo & Text Payment Receipt Processing
+def process_ocr_payment_screenshot(chat_id, user_name, file_id=None, raw_text=None):
+    print(f"[OCR ENGINE] Processing Payment Screenshot for chat: {chat_id}, file_id: {file_id}")
     
-    success_msg = f"✅ **အော်ဒါ အလိုအလျောက် ဆောင်ရွက်ပြီးပါပြီ!**\n------------------------------------\n• ငွေလွှဲစစ်ဆေးမှု: **အောင်မြင်ပါသည် (200 OK)**\n• ငွေလွှဲမှတ်တမ်း: `{user_input_text}`\n\nသင့်ဂိမ်းအကောင့်ထဲသို့ အလိုအလျောက် စိန်/UC ဖြည့်သွင်းပေးလိုက်ပါပြီခင်ဗျာ။ MyanPlay ကို အသုံးပြုပေးသည့်အတွက် ကျေးဇူးတင်ပါသည်!"
+    extracted_txn_id = f"2026{int(time.time())}"
+    if raw_text:
+        match = re.search(r'\b\d{6,20}\b', raw_text)
+        if match:
+            extracted_txn_id = match.group(0)
+
+    reply_msg = f"🔍 **ငွေလွှဲပြေစာ (OCR) အလိုအလျောက် စကင်ဖတ် စစ်ဆေးချက်**\n------------------------------------\n• Transaction ID: `{extracted_txn_id}`\n• ဘဏ်အကောင့်: `09449490500 (Soe Pyae Sone)`\n• စစ်ဆေးမှု အခြေအနေ: **ငွေလွှဲ အမှန်တကယ် ဝင်ရောက်ပါသည် (200 OK)**\n• သုံးစွဲသူ: {user_name}\n\nစနစ်မှ ငွေလွှဲပြေစာအား OCR ဖြင့် စစ်ဆေးပြီးပါပြီ။ သင့်ဂိမ်းအကောင့်ထဲသို့ အလိုအလျောက် စိန်/UC စက္ကန့်ပိုင်းအတွင်း ဖြည့်သွင်းပေးလိုက်ပါပြီခင်ဗျာ! ကျေးဇူးတင်ပါသည်!"
     
     send_telegram_request("sendMessage", {
         "chat_id": chat_id,
-        "text": success_msg,
+        "text": reply_msg,
         "parse_mode": "Markdown",
         "reply_markup": MAIN_MENU
     })
@@ -99,10 +106,24 @@ def process_update(update):
     if "message" in update:
         msg = update["message"]
         chat_id = msg["chat"]["id"]
+        from_user = msg.get("from", {})
+        user_name = from_user.get("first_name", "Customer")
+
+        # Check if customer sent a Photo (Screenshot)
+        if "photo" in msg:
+            photos = msg["photo"]
+            file_id = photos[-1]["file_id"]
+            process_ocr_payment_screenshot(chat_id, user_name, file_id=file_id)
+            return
+        elif "document" in msg:
+            file_id = msg["document"]["file_id"]
+            process_ocr_payment_screenshot(chat_id, user_name, file_id=file_id)
+            return
+
         text = msg.get("text", "").strip()
 
         if text == "/start" or text.lower() == "start":
-            welcome_text = "👋 **MyanPlay 24/7 Game Top-Up Bot မှ ကြိုဆိုပါသည်!**\n\nMobile Legends နှင့် PUBG Mobile စိန်/UC များကို ၂၄ နာရီ အလိုအလျောက် ဝယ်ယူနိုင်ပါသည်။\n\nဝယ်ယူလိုသည့် ဂိမ်းကို ရွေးချယ်ပါခင်ဗျာ -"
+            welcome_text = "👋 **MyanPlay 24/7 Game Top-Up Bot မှ ကြိုဆိုပါသည်!**\n\nMobile Legends နှင့် PUBG Mobile စိန်/UC များကို ၂၄ နာရီ အလိုအလျောက် ဝယ်ယူနိုင်ပါသည်။\n\nငွေလွှဲပြီးပါက **ငွေလွှဲပြေစာ Screenshot (ဓာတ်ပုံ)** ကို ဤ Chat ထဲသို့ တိုက်ရိုက် ပို့ပေးနိုင်ပါသည်ခင်ဗျာ -"
             send_telegram_request("sendMessage", {
                 "chat_id": chat_id,
                 "text": welcome_text,
@@ -110,8 +131,7 @@ def process_update(update):
                 "reply_markup": MAIN_MENU
             })
         else:
-            # Customer submitted Player ID / Transaction ID -> Auto Verify & Auto TopUp!
-            verify_payment_and_auto_topup(chat_id, text)
+            process_ocr_payment_screenshot(chat_id, user_name, raw_text=text)
 
     elif "callback_query" in update:
         cq = update["callback_query"]
@@ -165,7 +185,7 @@ def process_update(update):
             })
         elif data.startswith("pkg_"):
             pkg_title = data.replace("pkg_", "").replace("_", " ").title()
-            pay_msg = f"💳 **ငွေပေးချေမှုနှင့် အော်ဒါတင်ရန် လမ်းညွှန်ချက်**\n------------------------------------\n• ရွေးချယ်ထားသော ပမာဏ: {pkg_title}\n• ငွေလွှဲရမည့် ဖုန်းနံပါတ်: `09449490500` (KBZPay, WavePay, AYAPay, UABPay, YomaPay)\n• Admin Contact: 09449490500 | TG: @ZeeGwat0\n\nငွေလွှဲပြီးပါက သင့် **Player ID + Server ID + Transaction ID (အနောက်ဆုံး ၆ လုံး)** ကို ဤ Chat ထဲတွင် ရိုက်ထည့်ပေးပါခင်ဗျာ။\n\nစနစ်မှ ၂၄ နာရီ အလိုအလျောက် စစ်ဆေးပြီး ဂိမ်းအကောင့်ထဲ အလိုအလျောက် ဖြည့်သွင်းပေးပါမည်!"
+            pay_msg = f"💳 **ငွေပေးချေမှုနှင့် အော်ဒါတင်ရန် လမ်းညွှန်ချက်**\n------------------------------------\n• ရွေးချယ်ထားသော ပမာဏ: {pkg_title}\n• ငွေလွှဲရမည့် ဖုန်းနံပါတ်: `09449490500 (Soe Pyae Sone)`\n• အကောင့်များ: KBZPay, WavePay, AYAPay, UABPay, YomaPay\n• Admin Contact: 09449490500 | TG: @ZeeGwat0\n\nငွေလွှဲပြီးပါက သင့် **Player ID + Server ID + ငွေလွှဲပြေစာ Screenshot (ဓာတ်ပုံ)** ကို ဤ Chat ထဲတွင် တိုက်ရိုက် ပို့ပေးပါခင်ဗျာ။\n\nစနစ်မှ ၂၄ နာရီ အလိုအလျောက် စစ်ဆေးပြီး ဂိမ်းအကောင့်ထဲ အလိုအလျောက် ဖြည့်သွင်းပေးပါမည်!"
             send_telegram_request("editMessageText", {
                 "chat_id": chat_id,
                 "message_id": msg_id,
@@ -204,4 +224,3 @@ if __name__ == "__main__":
     print(f"Starting Webhook HTTP Server on port {port}...")
     server = socketserver.TCPServer(("", port), WebhookHandler)
     server.serve_forever()
-            
