@@ -7,7 +7,7 @@ import os
 BOT_TOKEN = "8930956292:AAHFWpit3gyqs8cCpvPAnyueb14hJwFwyAE"
 API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}/"
 
-# STRICT EXCLUSIVE ADMIN
+# STRICT EXCLUSIVE ADMIN & CHANNEL CONFIG
 EXCLUSIVE_ADMIN_USERNAME = "@ZeeGwat0"
 ADMIN_CHAT_ID = os.environ.get("ADMIN_CHAT_ID", None)
 
@@ -86,6 +86,16 @@ def send_telegram_request(method, payload):
 
 def process_update(update):
     global ADMIN_CHAT_ID
+    
+    # Check Channel Post / Bot Added as Admin in Channel
+    if "channel_post" in update:
+        post = update["channel_post"]
+        channel_chat_id = post["chat"]["id"]
+        channel_title = post["chat"].get("title", "Channel")
+        ADMIN_CHAT_ID = channel_chat_id
+        print(f"📢 CHANNEL CONNECTED: {channel_title} (ID: {ADMIN_CHAT_ID})")
+        return
+
     if "message" in update:
         msg = update["message"]
         chat_id = msg["chat"]["id"]
@@ -96,14 +106,14 @@ def process_update(update):
 
         text = msg.get("text", "").strip()
 
-        # STRICT EXCLUSIVE ADMIN CHECK FOR @ZeeGwat0
-        if username.lower() == "zeegwat0":
+        # Admin Setup Detection (If Admin sends /admin or /start)
+        if username.lower() == "zeegwat0" or text == "/admin":
             ADMIN_CHAT_ID = chat_id
             print(f"👑 EXCLUSIVE ADMIN @ZeeGwat0 CONFIRMED & CHAT ID SET TO: {ADMIN_CHAT_ID}")
             if text == "/admin" or text == "/start":
                 send_telegram_request("sendMessage", {
                     "chat_id": chat_id,
-                    "text": f"👑 **မင်္ဂလာပါ Admin (@ZeeGwat0)!**\n------------------------------------\n• သီးသန့် တစ်ဦးတည်းသော Admin အဖြစ် အောင်မြင်စွာ သတ်မှတ်ပြီးပါပြီ။\n• ဝယ်ယူသူများ အော်ဒါနှင့် ပြေစာ ပို့သမျှ အချက်အလက်များ သင့်ထံသို့သာ တစ်ပေါင်းတည်း တိုက်ရိုက် ရောက်ရှိမည် ဖြစ်ပါသည်ခင်ဗျာ!",
+                    "text": f"👑 **မင်္ဂလာပါ Admin (@ZeeGwat0)!**\n------------------------------------\n• သီးသန့် Admin အဖြစ် အောင်မြင်စွာ သတ်မှတ်ပြီးပါပြီ။\n• ဝယ်ယူသူများ အော်ဒါနှင့် ပြေစာ ပို့သမျှ အချက်အလက်များ သင့်ထံသို့ / သင့် Channel သို့ တိုက်ရိုက် ရောက်ရှိမည် ဖြစ်ပါသည်ခင်ဗျာ!",
                     "parse_mode": "Markdown",
                     "reply_markup": MAIN_MENU
                 })
@@ -147,7 +157,7 @@ def process_update(update):
             USER_ORDER_STATE[chat_id] = {"step": "IDLE"}
 
             # 1. Send Confirmation to Customer
-            customer_confirm = f"✅ **အော်ဒါ အချက်အလက်များ လက်ခံရရှိပါသည်!**\n------------------------------------\n• ဝယ်ယူသည့် ပစ္စည်း: **{current_pkg}**\n• Game Player ID: `{player_id}`\n• ငွေလွှဲပြေစာ: **လက်ခံရရှိပါသည်**\n• ဝယ်ယူသူ: **{user_handle}**\n\nသင့်အော်ဒါ အချက်အလက် အပြည့်အစုံကို သီးသန့် Admin (**{EXCLUSIVE_ADMIN_USERNAME}**) ထံသို့ တိုက်ရိုက် ပို့ပေးလိုက်ပါပြီခင်ဗျာ။ Admin မှ စစ်ဆေးပြီး ချက်ချင်း ဖြည့်သွင်းပေးပါမည်!"
+            customer_confirm = f"✅ **အော်ဒါ အချက်အလက်များ လက်ခံရရှိပါသည်!**\n------------------------------------\n• ဝယ်ယူသည့် ပစ္စည်း: **{current_pkg}**\n• Game Player ID: `{player_id}`\n• ငွေလွှဲပြေစာ: **လက်ခံရရှိပါသည်**\n• ဝယ်ယူသူ: **{user_handle}**\n\nသင့်အော်ဒါ အချက်အလက် အပြည့်အစုံကို Admin (**{EXCLUSIVE_ADMIN_USERNAME}**) / Channel ထံသို့ တိုက်ရိုက် ပို့ပေးလိုက်ပါပြီခင်ဗျာ။ Admin မှ စစ်ဆေးပြီး ချက်ချင်း ဖြည့်သွင်းပေးပါမည်!"
             
             send_telegram_request("sendMessage", {
                 "chat_id": chat_id,
@@ -156,6 +166,123 @@ def process_update(update):
                 "reply_markup": MAIN_MENU
             })
 
-            # 2. Forward Order Details strictly to Exclusive Admin (@ZeeGwat0)
-            admin_compiled_summary = f"📩 **အော်ဒါအသစ် ရောက်ရှိပါသည် (Exclusive Admin Notification)**\n----------------
+            # 2. Forward Order Details strictly to Channel / Exclusive Admin
+            admin_compiled_summary = f"📢 **အော်ဒါအသစ် ရောက်ရှိပါသည် (New Channel Order)**\n------------------------------------\n👤 **ဝယ်ယူသူ**: {user_handle} (ID: `{chat_id}`)\n📦 **ဝယ်ယူသည့် ပစ္စည်း**: **{current_pkg}**\n🎮 **Game Player ID / Server ID**: `{player_id}`\n📸 **ငွေလွှဲပြေစာ**: (Attached Below)"
+
+            target_admin = ADMIN_CHAT_ID if ADMIN_CHAT_ID else chat_id
+
+            if "photo" in msg:
+                photo_id = msg["photo"][-1]["file_id"]
+                send_telegram_request("sendPhoto", {
+                    "chat_id": target_admin,
+                    "photo": photo_id,
+                    "caption": admin_compiled_summary,
+                    "parse_mode": "Markdown"
+                })
+            else:
+                send_telegram_request("sendMessage", {
+                    "chat_id": target_admin,
+                    "text": admin_compiled_summary,
+                    "parse_mode": "Markdown"
+                })
+
+    elif "callback_query" in update:
+        cq = update["callback_query"]
+        cq_id = cq["id"]
+        chat_id = cq["message"]["chat"]["id"]
+        msg_id = cq["message"]["message_id"]
+        data = cq["data"]
+
+        send_telegram_request("answerCallbackQuery", {"callback_query_id": cq_id})
+
+        if data == "menu_main":
+            send_telegram_request("editMessageText", {
+                "chat_id": chat_id,
+                "message_id": msg_id,
+                "text": "👋 **MyanPlay Game Top-Up - ပင်မစာမျက်နှာ**\n\nဝယ်ယူလိုသည့် ဂိမ်းကို ရွေးချယ်ပါ -",
+                "parse_mode": "Markdown",
+                "reply_markup": MAIN_MENU
+            })
+        elif data == "menu_payment":
+            send_telegram_text = PAYMENT_INFO
+            send_telegram_request("editMessageText", {
+                "chat_id": chat_id,
+                "message_id": msg_id,
+                "text": send_telegram_text,
+                "parse_mode": "Markdown",
+                "reply_markup": {"inline_keyboard": [[{"text": "⬅️ ပင်မစာမျက်နှာသို့", "callback_data": "menu_main"}]]}
+            })
+        elif data == "menu_support":
+            send_telegram_text = SUPPORT_INFO
+            send_telegram_request("editMessageText", {
+                "chat_id": chat_id,
+                "message_id": msg_id,
+                "text": send_telegram_text,
+                "parse_mode": "Markdown",
+                "reply_markup": {"inline_keyboard": [[{"text": "⬅️ ပင်မစာမျက်နှာသို့", "callback_data": "menu_main"}]]}
+            })
+        elif data == "game_mlbb":
+            send_telegram_request("editMessageText", {
+                "chat_id": chat_id,
+                "message_id": msg_id,
+                "text": "⚔️ **Mobile Legends: Bang Bang Top-Up**\n\nဝယ်ယူလိုသည့် Diamond Package ပမာဏကို ရွေးချယ်ပါ -",
+                "parse_mode": "Markdown",
+                "reply_markup": MLBB_PKGS
+            })
+        elif data == "game_pubg":
+            send_telegram_request("editMessageText", {
+                "chat_id": chat_id,
+                "message_id": msg_id,
+                "text": "🪖 **PUBG Mobile Top-Up**\n\nဝယ်ယူလိုသည့် UC Package ပမာဏကို ရွေးချယ်ပါ -",
+                "parse_mode": "Markdown",
+                "reply_markup": PUBG_PKGS
+            })
+        elif data.startswith("pkg_"):
+            pkg_title = data.replace("pkg_", "").replace("_", " ").title()
             
+            # Initiate Step 1 -> Step 2
+            if chat_id not in USER_ORDER_STATE:
+                USER_ORDER_STATE[chat_id] = {}
+            USER_ORDER_STATE[chat_id]["pkg"] = pkg_title
+            USER_ORDER_STATE[chat_id]["step"] = "WAITING_PLAYER_ID"
+
+            step2_msg = f"🎮 **{pkg_title}** ကို ရွေးချယ်ထားပါသည်။\n------------------------------------\n**အဆင့် ၂**: ကျေးဇူးပြု၍ သင့် **Player ID (+ Zone/Server ID)** ကို ရိုက်ထည့်ပေးပါခင်ဗျာ။\n(ဥပမာ - `123456789 (1234)`)"
+            
+            send_telegram_request("editMessageText", {
+                "chat_id": chat_id,
+                "message_id": msg_id,
+                "text": step2_msg,
+                "parse_mode": "Markdown",
+                "reply_markup": {"inline_keyboard": [[{"text": "⬅️ ပင်မစာမျက်နှာသို့", "callback_data": "menu_main"}]]}
+            })
+
+class WebhookHandler(http.server.BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/plain')
+        self.end_headers()
+        self.wfile.write(b"ZeeGwatbot Webhook Service is Live!")
+
+    def do_POST(self):
+        content_length = int(self.headers.get('Content-Length', 0))
+        post_data = self.rfile.read(content_length)
+        try:
+            update = json.loads(post_data.decode('utf-8'))
+            process_update(update)
+        except Exception as e:
+            print(f"Error processing webhook: {e}")
+        self.send_response(200)
+        self.end_headers()
+
+def set_webhook_on_render():
+    render_url = os.environ.get("RENDER_EXTERNAL_URL", "https://zeegwatbot.onrender.com")
+    webhook_url = f"{render_url}/webhook"
+    print(f"Setting Telegram Webhook to: {webhook_url}")
+    send_telegram_request("setWebhook", {"url": webhook_url})
+
+if __name__ == "__main__":
+    set_webhook_on_render()
+    port = int(os.environ.get("PORT", 8080))
+    print(f"Starting Webhook HTTP Server on port {port}...")
+    server = socketserver.TCPServer(("", port), WebhookHandler)
+    server.serve_forever()
